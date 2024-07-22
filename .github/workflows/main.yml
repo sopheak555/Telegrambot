@@ -1,39 +1,34 @@
-name: Deploy Code
+name: Deploy to GitHub Pages
 
 on:
   push:
     branches:
-      - main  # or any branch you want to trigger this action
+      - main  # Set a branch name to trigger deployment
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v3
-      
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '14'  # or any version you prefer
-        
-    - name: Install dependencies
-      run: npm ci  # or yarn install, depending on your package manager
-      
-    - name: Run tests
-      run: npm test  # or your specific test command
-      
-    - name: Build application
-      run: npm run build  # or your specific build command
-      
-    - name: Deploy to production
-      env:
-        DEPLOY_KEY: ${{ secrets.DEPLOY_KEY }}  # Add this secret in your GitHub repository settings
-      run: |
-        # Add your deployment commands here
-        # This could involve pushing to a specific server, updating a cloud service, etc.
-        # For example, if deploying to Heroku:
-        # git push https://heroku:$DEPLOY_KEY@git.heroku.com/your-app-name.git main
-        
-        echo "Deployment completed!"
+      - uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.OS }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.OS }}-node-
+
+      - run: npm ci
+      - run: npm run build
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
